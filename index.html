@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>TipJar — Tip creators in NIM</title>
+<meta name="description" content="TipJar: a shareable tip page for creators. Supporters tip in NIM (and optionally USDT) right inside Nimiq Pay.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231f2348'/%3E%3Ccircle cx='32' cy='26' r='11' fill='%23e9b213'/%3E%3Cpath d='M18 44h28l-3.5 10h-21z' fill='%2324dbb3'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <svg class="brand-icon" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="14" fill="#1f2348"/><circle cx="32" cy="26" r="11" fill="#e9b213"/><path d="M18 44h28l-3.5 10h-21z" fill="#24dbb3"/></svg>
+    <span class="brand-name">TipJar</span>
+  </div>
+  <div class="host-badges">
+    <span id="networkBadge" class="badge" hidden></span>
+    <span id="modeBadge" class="badge badge-demo" data-i18n="badgeDemo">Demo mode</span>
+  </div>
+</header>
+
+<main>
+  <!-- Shown when NOT running inside Nimiq Pay -->
+  <section id="openInAppBanner" class="card banner" hidden>
+    <h2 data-i18n="bannerTitle">Open this page in Nimiq Pay</h2>
+    <p data-i18n="bannerText">TipJar runs as a Mini App inside Nimiq Pay, where tipping is one tap. You can preview everything here, but sending a tip needs the Nimiq Pay wallet.</p>
+    <a id="openInAppBtn" class="btn btn-primary" href="#" rel="noopener" data-i18n="bannerButton">Open in Nimiq Pay</a>
+  </section>
+
+  <!-- Creator setup -->
+  <section id="creatorCard" class="card">
+    <h2 data-i18n="creatorTitle">Your tip page</h2>
+    <p class="hint" data-i18n="creatorHint">Paste your Nimiq address once. It stays on this device only.</p>
+    <label class="field">
+      <span data-i18n="creatorAddressLabel">Your Nimiq address</span>
+      <input id="creatorAddress" type="text" inputmode="text" autocomplete="off" spellcheck="false" placeholder="NQ00 0000 0000 0000 0000 0000 0000 0000 0000">
+    </label>
+    <label class="field">
+      <span data-i18n="creatorEvmLabel">Your Polygon address (optional, for USDT tips)</span>
+      <input id="creatorEvm" type="text" inputmode="text" autocomplete="off" spellcheck="false" placeholder="0x…">
+    </label>
+    <div class="row">
+      <button id="saveCreator" class="btn btn-primary" data-i18n="saveButton">Save &amp; get my link</button>
+      <button id="fillMine" class="btn btn-ghost" hidden data-i18n="fillMineButton">Use my wallet address</button>
+    </div>
+    <p id="creatorError" class="error" role="alert" hidden></p>
+    <div id="shareBox" hidden>
+      <label class="field">
+        <span data-i18n="shareLinkLabel">Your shareable tip link</span>
+        <div class="copy-row">
+          <input id="shareLink" type="text" readonly>
+          <button id="copyLink" class="btn btn-small" data-i18n="copyButton">Copy</button>
+        </div>
+      </label>
+      <div id="qrBox" class="qr-box"></div>
+      <p id="qrFallback" class="hint" hidden data-i18n="qrFallback">QR code unavailable (library failed to load) — copy the link instead.</p>
+    </div>
+  </section>
+
+  <!-- Tip card -->
+  <section id="tipCard" class="card" hidden>
+    <h2><span data-i18n="tipTitle">Tip</span> <span id="tipTargetShort" class="mono accent"></span></h2>
+    <p class="hint"><span data-i18n="tipToLabel">Sending to</span> <span id="tipTargetFull" class="mono break-all"></span></p>
+
+    <div class="amount-grid" role="group" aria-label="Preset amounts">
+      <button class="amount-btn" data-amount="1">1 NIM</button>
+      <button class="amount-btn" data-amount="5">5 NIM</button>
+      <button class="amount-btn" data-amount="10">10 NIM</button>
+      <button class="amount-btn" data-amount="25">25 NIM</button>
+    </div>
+    <label class="field">
+      <span data-i18n="customAmountLabel">Custom amount (NIM)</span>
+      <input id="customAmount" type="number" min="0" step="any" inputmode="decimal" placeholder="0.00">
+    </label>
+
+    <button id="tipButton" class="btn btn-primary btn-big">💛 <span data-i18n="tipButton">Send tip</span></button>
+    <p id="tipStatus" class="status" role="status" aria-live="polite"></p>
+
+    <!-- Optional USDT on Polygon -->
+    <div id="usdtBox" class="usdt-box" hidden>
+      <hr>
+      <p class="hint"><span data-i18n="usdtHint">Prefer USDT? This creator also accepts USDT on Polygon. The amount above is used as the USDT amount.</span></p>
+      <button id="usdtButton" class="btn btn-secondary" data-i18n="usdtButton">Tip with USDT (Polygon)</button>
+      <p id="usdtStatus" class="status" role="status" aria-live="polite"></p>
+    </div>
+  </section>
+
+  <!-- Guestbook -->
+  <section id="guestbookCard" class="card">
+    <h2 data-i18n="guestbookTitle">Guestbook</h2>
+    <p class="hint" data-i18n="guestbookHint">Leave a note on the wall. Inside Nimiq Pay you sign it with your wallet — no transaction, no fee.</p>
+    <label class="field">
+      <span data-i18n="guestbookNameLabel">Your name (optional)</span>
+      <input id="gbName" type="text" maxlength="40" autocomplete="off" placeholder="anon">
+    </label>
+    <label class="field">
+      <span data-i18n="guestbookMsgLabel">Message</span>
+      <textarea id="gbMessage" rows="3" maxlength="280" placeholder="Great work!"></textarea>
+    </label>
+    <button id="gbPost" class="btn btn-primary" data-i18n="guestbookButton">Sign &amp; post</button>
+    <p id="gbStatus" class="status" role="status" aria-live="polite"></p>
+    <ul id="gbWall" class="wall"></ul>
+    <p id="gbEmpty" class="hint" data-i18n="guestbookEmpty">No notes yet — be the first.</p>
+  </section>
+
+  <footer class="footer">
+    <p class="hint">TipJar · <span data-i18n="footerText">A Nimiq Pay Mini App. No backend, no tracking — your data stays on this device.</span></p>
+  </footer>
+</main>
+
+<!-- QR Code Generator (Kazuhiko Arase, MIT) — pinned CDN copy; app degrades gracefully if it fails -->
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js" onerror="window.__qrLibFailed=true"></script>
+<script type="module" src="app.js"></script>
+</body>
+</html>
